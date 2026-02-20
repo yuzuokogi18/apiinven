@@ -17,31 +17,43 @@ func NewAuthHandler() *AuthHandler {
 	}
 }
 
+// REGISTER
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
-	if err := h.service.Register(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+	usuario, token, err := h.service.Register(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Usuario registrado",
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Usuario registrado correctamente",
+		"token":   token,
+		"usuario": usuario,
 	})
 }
 
+// LOGIN
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	json.NewDecoder(r.Body).Decode(&req)
 
-	token, err := h.service.Login(&req)
+	usuario, token, err := h.service.Login(&req)
 	if err != nil {
-		http.Error(w, err.Error(), 401)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"token": token,
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Login exitoso",
+		"token":   token,
+		"usuario": usuario,
 	})
 }

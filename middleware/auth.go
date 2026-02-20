@@ -37,8 +37,20 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		claimsMap := token.Claims.(jwt.MapClaims)
-		userID := int(claimsMap["user_id"].(float64))
+		// 🔥 Forma segura (sin panic)
+		claimsMap, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			http.Error(w, "Token inválido", http.StatusUnauthorized)
+			return
+		}
+
+		userIDFloat, ok := claimsMap["user_id"].(float64)
+		if !ok {
+			http.Error(w, "Token inválido", http.StatusUnauthorized)
+			return
+		}
+
+		userID := int(userIDFloat)
 
 		claims := &Claims{UserID: userID}
 		ctx := context.WithValue(r.Context(), UserContextKey, claims)
