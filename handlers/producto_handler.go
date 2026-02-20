@@ -21,14 +21,25 @@ func NewProductoHandler() *ProductoHandler {
 	}
 }
 
+// 🔥 CREATE
 func (h *ProductoHandler) Create(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	w.Header().Set("Content-Type", "application/json")
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	if !ok {
+		http.Error(w, "usuario no autorizado", http.StatusUnauthorized)
+		return
+	}
 
 	var p models.Producto
-	json.NewDecoder(r.Body).Decode(&p)
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, "datos inválidos", http.StatusBadRequest)
+		return
+	}
 
+	// 🔥 Pasamos el userID al service (IMPORTANTE)
 	if err := h.service.Create(&p, claims.UserID); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -37,33 +48,74 @@ func (h *ProductoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// 🔥 GET ALL
 func (h *ProductoHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	w.Header().Set("Content-Type", "application/json")
 
-	productos, _ := h.service.GetAll(claims.UserID)
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	if !ok {
+		http.Error(w, "usuario no autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	productos, err := h.service.GetAll(claims.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	json.NewEncoder(w).Encode(productos)
 }
+
+// 🔥 GET BY ID
 func (h *ProductoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	w.Header().Set("Content-Type", "application/json")
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	if !ok {
+		http.Error(w, "usuario no autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
 
 	p, err := h.service.GetByID(id, claims.UserID)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, "producto no encontrado", http.StatusNotFound)
 		return
 	}
 
 	json.NewEncoder(w).Encode(p)
 }
+
+// 🔥 UPDATE
 func (h *ProductoHandler) Update(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	w.Header().Set("Content-Type", "application/json")
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	if !ok {
+		http.Error(w, "usuario no autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
 
 	var p models.Producto
-	json.NewDecoder(r.Body).Decode(&p)
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, "datos inválidos", http.StatusBadRequest)
+		return
+	}
 
 	if err := h.service.Update(id, &p, claims.UserID); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -71,12 +123,25 @@ func (h *ProductoHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"message": "Producto actualizado",
 	})
 }
+
+// 🔥 DELETE
 func (h *ProductoHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	w.Header().Set("Content-Type", "application/json")
+
+	claims, ok := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
+	if !ok {
+		http.Error(w, "usuario no autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
 
 	if err := h.service.Delete(id, claims.UserID); err != nil {
-		http.Error(w, err.Error(), 400)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
