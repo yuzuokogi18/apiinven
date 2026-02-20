@@ -25,6 +25,7 @@ func NewProductoHandler() *ProductoHandler {
 func (h *ProductoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	// 🔥 Obtener usuario del JWT
 	claims, ok := r.Context().Value(middleware.UserContextKey).(*middleware.Claims)
 	if !ok {
 		http.Error(w, "usuario no autorizado", http.StatusUnauthorized)
@@ -32,19 +33,24 @@ func (h *ProductoHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var p models.Producto
+
+	// 🔥 Decodificar JSON
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		http.Error(w, "datos inválidos", http.StatusBadRequest)
 		return
 	}
 
-	// 🔥 Pasamos el userID al service (IMPORTANTE)
+	// 🔥 Crear producto pasando el userID
 	if err := h.service.Create(&p, claims.UserID); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Producto creado",
+	// 🔥 RESPUESTA CORRECTA (IMPORTANTE)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":  "Producto creado correctamente",
+		"producto": p,
 	})
 }
 
@@ -120,7 +126,7 @@ func (h *ProductoHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Producto actualizado",
+		"message": "Producto actualizado correctamente",
 	})
 }
 
@@ -146,6 +152,6 @@ func (h *ProductoHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Producto eliminado",
+		"message": "Producto eliminado correctamente",
 	})
 }
